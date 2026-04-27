@@ -1,18 +1,20 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { palette } from '../utils/theme';
+import { palette, radii } from '../utils/theme';
 
 type ButtonProps = {
   label: string;
   onPress?: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
   size?: 'default' | 'small';
+  disabled?: boolean;
 };
 
-export function Button({ label, onPress, variant = 'primary', size = 'default' }: ButtonProps) {
+export function Button({ label, onPress, variant = 'primary', size = 'default', disabled = false }: ButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
+      disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
@@ -20,7 +22,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'default' }
         variant === 'primary' ? styles.primary : null,
         variant === 'secondary' ? styles.secondary : null,
         variant === 'danger' ? styles.danger : null,
-        pressed ? styles.pressed : null,
+        (pressed || disabled) ? styles.pressed : null,
       ]}
     >
       <Text
@@ -39,7 +41,7 @@ export function Button({ label, onPress, variant = 'primary', size = 'default' }
 const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: radii.md,
     justifyContent: 'center',
   },
   default: {
@@ -56,12 +58,12 @@ const styles = StyleSheet.create({
     backgroundColor: palette.accent,
   },
   secondary: {
-    backgroundColor: '#fff',
-    borderColor: '#eadccf',
+    backgroundColor: palette.surfaceRaised,
+    borderColor: palette.line,
     borderWidth: 1,
   },
   danger: {
-    backgroundColor: '#7f2f32',
+    backgroundColor: palette.danger,
   },
   pressed: {
     opacity: 0.8,

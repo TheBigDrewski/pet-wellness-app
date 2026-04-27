@@ -1,5 +1,24 @@
-import { Appointment, AppointmentInput, FeedingLog, FeedingLogInput, HealthLog, HealthLogInput, Medication, MedicationInput, Pet, PetInput, RecordInput, RecordItem, WeightInput, WeightLog } from '../types/models';
-import { normalizeDateString, safeNumber, summarizeHealthLog } from '../utils/date';
+import {
+  Appointment,
+  AppointmentInput,
+  FeedingLog,
+  FeedingLogInput,
+  HealthLog,
+  HealthLogInput,
+  Medication,
+  MedicationDose,
+  MedicationDoseStatus,
+  MedicationInput,
+  Pet,
+  PetInput,
+  RecordInput,
+  RecordItem,
+  VaccineInput,
+  VaccineRecord,
+  WeightInput,
+  WeightLog,
+} from '../types/models';
+import { addHours, normalizeDateOnly, normalizeDateString, safeNumber, summarizeHealthLog } from '../utils/date';
 import { createId } from '../utils/ids';
 
 const now = () => new Date().toISOString();
@@ -19,7 +38,14 @@ export function createPet(input: PetInput): Pet {
     vetName: input.vetName.trim(),
     vetPhone: input.vetPhone.trim(),
     vetClinic: input.vetClinic.trim(),
-    photoUri: '',
+    preferredVetClinic: input.preferredVetClinic.trim(),
+    photoUri: input.photoUri.trim(),
+    allergies: input.allergies.trim(),
+    knownConditions: input.knownConditions.trim(),
+    currentFood: input.currentFood.trim(),
+    insuranceProvider: input.insuranceProvider.trim(),
+    insurancePolicyNumber: input.insurancePolicyNumber.trim(),
+    emergencyContact: input.emergencyContact.trim(),
     notes: input.notes.trim(),
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -40,6 +66,14 @@ export function updatePetFromInput(current: Pet, input: PetInput): Pet {
     vetName: input.vetName.trim(),
     vetPhone: input.vetPhone.trim(),
     vetClinic: input.vetClinic.trim(),
+    preferredVetClinic: input.preferredVetClinic.trim(),
+    photoUri: input.photoUri.trim(),
+    allergies: input.allergies.trim(),
+    knownConditions: input.knownConditions.trim(),
+    currentFood: input.currentFood.trim(),
+    insuranceProvider: input.insuranceProvider.trim(),
+    insurancePolicyNumber: input.insurancePolicyNumber.trim(),
+    emergencyContact: input.emergencyContact.trim(),
     notes: input.notes.trim(),
     updatedAt: now(),
   };
@@ -78,19 +112,48 @@ export function createFeedingLog(petId: string, input: FeedingLogInput): Feeding
   };
 }
 
+function resolveMedicationInterval(input: MedicationInput) {
+  if (input.scheduleType === 'onceDaily') return 24;
+  if (input.scheduleType === 'twiceDaily') return 12;
+  if (input.scheduleType === 'weekly') return 168;
+  return safeNumber(input.intervalHours, 24);
+}
+
 export function createMedication(petId: string, input: MedicationInput): Medication {
   return {
     id: createId('med'),
     petId,
     name: input.name.trim(),
     dosage: input.dosage.trim(),
-    frequencyHours: safeNumber(input.frequencyHours, 24),
-    startDate: input.startDate.trim(),
-    endDate: input.endDate.trim(),
-    notes: input.notes.trim(),
-    lastGivenAt: '',
+    scheduleType: input.scheduleType,
+    intervalHours: resolveMedicationInterval(input),
+    startAt: normalizeDateString(input.startAt),
+    endAt: normalizeDateOnly(input.endAt),
+    instructions: input.instructions.trim(),
+    customScheduleNotes: input.customScheduleNotes.trim(),
     createdAt: now(),
   };
+}
+
+export function createMedicationDose(medication: Medication, status: MedicationDoseStatus, scheduledFor?: string): MedicationDose {
+  const dueAt = scheduledFor ? normalizeDateString(scheduledFor) : nextDoseAt(medication, []);
+  return {
+    id: createId('dose'),
+    medicationId: medication.id,
+    petId: medication.petId,
+    scheduledFor: dueAt,
+    status,
+    actedAt: now(),
+    notes: '',
+  };
+}
+
+export function nextDoseAt(medication: Medication, doseHistory: MedicationDose[]) {
+  const history = doseHistory
+    .filter((entry) => entry.medicationId === medication.id)
+    .sort((a, b) => b.scheduledFor.localeCompare(a.scheduledFor));
+  const anchor = history[0]?.scheduledFor || medication.startAt;
+  return addHours(anchor, medication.intervalHours);
 }
 
 export function createAppointment(petId: string, input: AppointmentInput): Appointment {
@@ -102,6 +165,7 @@ export function createAppointment(petId: string, input: AppointmentInput): Appoi
     scheduledAt: normalizeDateString(input.scheduledAt),
     location: input.location.trim(),
     notes: input.notes.trim(),
+    completedAt: '',
     createdAt: now(),
   };
 }
@@ -122,9 +186,23 @@ export function createRecordItem(petId: string, input: RecordInput): RecordItem 
     id: createId('record'),
     petId,
     title: input.title.trim(),
-    dateGiven: input.dateGiven.trim(),
-    expiresAt: input.expiresAt.trim(),
+    kind: input.kind.trim() || 'General',
+    dateGiven: normalizeDateOnly(input.dateGiven),
+    expiresAt: normalizeDateOnly(input.expiresAt),
     provider: input.provider.trim(),
+    notes: input.notes.trim(),
+  };
+}
+
+export function createVaccineRecord(petId: string, input: VaccineInput): VaccineRecord {
+  return {
+    id: createId('vaccine'),
+    petId,
+    name: input.name.trim(),
+    dateGiven: normalizeDateOnly(input.dateGiven),
+    expiresAt: normalizeDateOnly(input.expiresAt),
+    provider: input.provider.trim(),
+    lotNumber: input.lotNumber.trim(),
     notes: input.notes.trim(),
   };
 }

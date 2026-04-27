@@ -4,6 +4,7 @@ import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
 import { AppSnapshot } from '../types/models';
+import { normalizeSnapshot } from '../storage/normalizeSnapshot';
 
 export async function exportSnapshot(snapshot: AppSnapshot) {
   const payload = JSON.stringify(snapshot, null, 2);
@@ -41,7 +42,7 @@ export async function importSnapshotFile(): Promise<AppSnapshot | null> {
         const reader = new FileReader();
         reader.onload = () => {
           try {
-            resolve(JSON.parse(String(reader.result)) as AppSnapshot);
+            resolve(normalizeSnapshot(JSON.parse(String(reader.result))));
           } catch (error) {
             reject(error);
           }
@@ -58,5 +59,5 @@ export async function importSnapshotFile(): Promise<AppSnapshot | null> {
     return null;
   }
   const content = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
-  return JSON.parse(content) as AppSnapshot;
+  return normalizeSnapshot(JSON.parse(content));
 }

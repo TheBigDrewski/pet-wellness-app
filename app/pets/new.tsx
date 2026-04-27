@@ -1,3 +1,4 @@
+import * as DocumentPicker from 'expo-document-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -6,10 +7,11 @@ import { Button } from '../../src/components/Button';
 import { Card } from '../../src/components/Card';
 import { Field, TextAreaField } from '../../src/components/Field';
 import { OptionField } from '../../src/components/OptionField';
+import { PetAvatar } from '../../src/components/PetAvatar';
 import { Screen } from '../../src/components/Screen';
 import { usePetCare } from '../../src/storage/PetCareProvider';
 import { PetInput } from '../../src/types/models';
-import { palette } from '../../src/utils/theme';
+import { palette, spacing } from '../../src/utils/theme';
 
 const emptyPet: PetInput = {
   name: '',
@@ -23,6 +25,14 @@ const emptyPet: PetInput = {
   vetName: '',
   vetPhone: '',
   vetClinic: '',
+  preferredVetClinic: '',
+  photoUri: '',
+  allergies: '',
+  knownConditions: '',
+  currentFood: '',
+  insuranceProvider: '',
+  insurancePolicyNumber: '',
+  emergencyContact: '',
   notes: '',
 };
 
@@ -46,6 +56,14 @@ export default function PetFormScreen() {
         vetName: existingPet.vetName,
         vetPhone: existingPet.vetPhone,
         vetClinic: existingPet.vetClinic,
+        preferredVetClinic: existingPet.preferredVetClinic,
+        photoUri: existingPet.photoUri,
+        allergies: existingPet.allergies,
+        knownConditions: existingPet.knownConditions,
+        currentFood: existingPet.currentFood,
+        insuranceProvider: existingPet.insuranceProvider,
+        insurancePolicyNumber: existingPet.insurancePolicyNumber,
+        emergencyContact: existingPet.emergencyContact,
         notes: existingPet.notes,
       });
     }
@@ -68,11 +86,27 @@ export default function PetFormScreen() {
     router.replace('/(tabs)/pets');
   };
 
+  const handlePickPhoto = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ type: 'image/*', copyToCacheDirectory: true });
+    if (result.canceled || !result.assets.length) {
+      return;
+    }
+    setForm((current) => ({ ...current, photoUri: result.assets[0].uri }));
+  };
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
         <Card style={styles.card}>
           <Text style={styles.heading}>{petId ? 'Edit pet profile' : 'Add a new pet'}</Text>
+          <View style={styles.avatarRow}>
+            <PetAvatar name={form.name || 'Pet'} species={form.species} photoUri={form.photoUri} size={84} />
+            <View style={styles.avatarActions}>
+              <Button label="Choose photo" variant="secondary" size="small" onPress={handlePickPhoto} />
+              {form.photoUri ? <Button label="Remove photo" variant="secondary" size="small" onPress={() => setForm((current) => ({ ...current, photoUri: '' }))} /> : null}
+            </View>
+          </View>
+
           <Field label="Name *" value={form.name} onChangeText={(value) => setForm((current) => ({ ...current, name: value }))} placeholder="Luna" />
           <OptionField
             label="Species"
@@ -106,6 +140,24 @@ export default function PetFormScreen() {
             placeholder="Golden coat with white chest"
           />
           <Field
+            label="Current food"
+            value={form.currentFood}
+            onChangeText={(value) => setForm((current) => ({ ...current, currentFood: value }))}
+            placeholder="Purina Pro Plan Sensitive Skin & Stomach"
+          />
+          <TextAreaField
+            label="Allergies"
+            value={form.allergies}
+            onChangeText={(value) => setForm((current) => ({ ...current, allergies: value }))}
+            placeholder="Chicken sensitivity, seasonal pollen"
+          />
+          <TextAreaField
+            label="Known conditions"
+            value={form.knownConditions}
+            onChangeText={(value) => setForm((current) => ({ ...current, knownConditions: value }))}
+            placeholder="Hip dysplasia, anxiety, mild GI sensitivity"
+          />
+          <Field
             label="Microchip number"
             value={form.microchipNumber}
             onChangeText={(value) => setForm((current) => ({ ...current, microchipNumber: value }))}
@@ -116,6 +168,12 @@ export default function PetFormScreen() {
             value={form.vetName}
             onChangeText={(value) => setForm((current) => ({ ...current, vetName: value }))}
             placeholder="Dr. Kim"
+          />
+          <Field
+            label="Preferred clinic"
+            value={form.preferredVetClinic}
+            onChangeText={(value) => setForm((current) => ({ ...current, preferredVetClinic: value }))}
+            placeholder="Maple Grove Vet"
           />
           <Field
             label="Vet clinic"
@@ -130,11 +188,29 @@ export default function PetFormScreen() {
             placeholder="555-0123"
             keyboardType="phone-pad"
           />
+          <Field
+            label="Insurance provider"
+            value={form.insuranceProvider}
+            onChangeText={(value) => setForm((current) => ({ ...current, insuranceProvider: value }))}
+            placeholder="Trupanion"
+          />
+          <Field
+            label="Policy number"
+            value={form.insurancePolicyNumber}
+            onChangeText={(value) => setForm((current) => ({ ...current, insurancePolicyNumber: value }))}
+            placeholder="TP-20491-LUNA"
+          />
+          <Field
+            label="Emergency contact"
+            value={form.emergencyContact}
+            onChangeText={(value) => setForm((current) => ({ ...current, emergencyContact: value }))}
+            placeholder="Chris - 555-0222"
+          />
           <TextAreaField
             label="Notes"
             value={form.notes}
             onChangeText={(value) => setForm((current) => ({ ...current, notes: value }))}
-            placeholder="Temperament, allergies, emergency instructions"
+            placeholder="Temperament, medication tips, emergency instructions"
           />
           <View style={styles.actions}>
             <Button label="Save pet" onPress={handleSave} />
@@ -157,6 +233,15 @@ const styles = StyleSheet.create({
     color: palette.ink,
     fontSize: 20,
     fontWeight: '700',
+  },
+  avatarRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  avatarActions: {
+    flex: 1,
+    gap: spacing.sm,
   },
   actions: {
     flexDirection: 'row',

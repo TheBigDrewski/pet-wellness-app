@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { palette } from '../utils/theme';
+import { palette, radii } from '../utils/theme';
 
 type OptionFieldProps = {
   label: string;
@@ -50,9 +50,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   option: {
-    backgroundColor: '#fffaf5',
-    borderColor: '#ddcbbd',
-    borderRadius: 999,
+    backgroundColor: palette.surface,
+    borderColor: palette.line,
+    borderRadius: radii.pill,
     borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 10,

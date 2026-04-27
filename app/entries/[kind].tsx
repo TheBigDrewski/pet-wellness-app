@@ -8,15 +8,25 @@ import { Field, TextAreaField } from '../../src/components/Field';
 import { OptionField } from '../../src/components/OptionField';
 import { Screen } from '../../src/components/Screen';
 import { usePetCare } from '../../src/storage/PetCareProvider';
+import { MedicationScheduleType } from '../../src/types/models';
 import { palette } from '../../src/utils/theme';
 
-type EntryKind = 'health' | 'feeding' | 'medication' | 'appointment' | 'weight' | 'record';
+type EntryKind = 'health' | 'feeding' | 'medication' | 'appointment' | 'weight' | 'record' | 'vaccine';
 
 const now = new Date().toISOString().slice(0, 16);
 
 export default function EntryFormScreen() {
   const { kind, petId } = useLocalSearchParams<{ kind: EntryKind; petId?: string }>();
-  const { snapshot, addHealthLog, addFeedingLog, addMedication, addAppointment, addWeightLog, addRecordItem } = usePetCare();
+  const {
+    snapshot,
+    addHealthLog,
+    addFeedingLog,
+    addMedication,
+    addAppointment,
+    addWeightLog,
+    addRecordItem,
+    addVaccineRecord,
+  } = usePetCare();
   const [selectedPetId, setSelectedPetId] = useState(petId ?? snapshot.pets[0]?.id ?? '');
 
   const [health, setHealth] = useState({
@@ -44,10 +54,12 @@ export default function EntryFormScreen() {
   const [medication, setMedication] = useState({
     name: '',
     dosage: '',
-    frequencyHours: '24',
-    startDate: now.slice(0, 10),
-    endDate: '',
-    notes: '',
+    scheduleType: 'onceDaily' as MedicationScheduleType,
+    intervalHours: '24',
+    startAt: now,
+    endAt: '',
+    instructions: '',
+    customScheduleNotes: '',
   });
   const [appointment, setAppointment] = useState({
     title: '',
@@ -64,9 +76,18 @@ export default function EntryFormScreen() {
   });
   const [record, setRecord] = useState({
     title: '',
+    kind: 'General',
     dateGiven: now.slice(0, 10),
     expiresAt: '',
     provider: '',
+    notes: '',
+  });
+  const [vaccine, setVaccine] = useState({
+    name: '',
+    dateGiven: now.slice(0, 10),
+    expiresAt: '',
+    provider: '',
+    lotNumber: '',
     notes: '',
   });
 
@@ -131,6 +152,14 @@ export default function EntryFormScreen() {
       await addRecordItem(selectedPetId, record);
     }
 
+    if (kind === 'vaccine') {
+      if (!vaccine.name.trim()) {
+        Alert.alert('Required field', 'Vaccine name is required.');
+        return;
+      }
+      await addVaccineRecord(selectedPetId, vaccine);
+    }
+
     router.back();
   };
 
@@ -179,10 +208,26 @@ export default function EntryFormScreen() {
             <>
               <Field label="Medication name *" value={medication.name} onChangeText={(value) => setMedication((current) => ({ ...current, name: value }))} placeholder="Carprofen" />
               <Field label="Dosage *" value={medication.dosage} onChangeText={(value) => setMedication((current) => ({ ...current, dosage: value }))} placeholder="25 mg" />
-              <Field label="Frequency hours" value={medication.frequencyHours} onChangeText={(value) => setMedication((current) => ({ ...current, frequencyHours: value }))} keyboardType="numeric" placeholder="24" />
-              <Field label="Start date" value={medication.startDate} onChangeText={(value) => setMedication((current) => ({ ...current, startDate: value }))} placeholder="2026-04-27" />
-              <Field label="End date" value={medication.endDate} onChangeText={(value) => setMedication((current) => ({ ...current, endDate: value }))} placeholder="2026-05-11" />
-              <TextAreaField label="Notes" value={medication.notes} onChangeText={(value) => setMedication((current) => ({ ...current, notes: value }))} placeholder="Give with food" />
+              <OptionField
+                label="Schedule"
+                value={medication.scheduleType}
+                options={['onceDaily', 'twiceDaily', 'everyXHours', 'weekly', 'custom']}
+                optionLabels={{
+                  onceDaily: 'Once daily',
+                  twiceDaily: 'Twice daily',
+                  everyXHours: 'Every X hours',
+                  weekly: 'Weekly',
+                  custom: 'Custom',
+                }}
+                onChange={(value) => setMedication((current) => ({ ...current, scheduleType: value as MedicationScheduleType }))}
+              />
+              {medication.scheduleType === 'everyXHours' || medication.scheduleType === 'custom' ? (
+                <Field label="Interval hours" value={medication.intervalHours} onChangeText={(value) => setMedication((current) => ({ ...current, intervalHours: value }))} keyboardType="numeric" placeholder="24" />
+              ) : null}
+              <Field label="Start date/time" value={medication.startAt} onChangeText={(value) => setMedication((current) => ({ ...current, startAt: value }))} placeholder="2026-04-27T08:00" />
+              <Field label="End date" value={medication.endAt} onChangeText={(value) => setMedication((current) => ({ ...current, endAt: value }))} placeholder="2026-05-11" />
+              <TextAreaField label="Instructions" value={medication.instructions} onChangeText={(value) => setMedication((current) => ({ ...current, instructions: value }))} placeholder="Give with food or hide in pill pocket" />
+              <TextAreaField label="Custom schedule notes" value={medication.customScheduleNotes} onChangeText={(value) => setMedication((current) => ({ ...current, customScheduleNotes: value }))} placeholder="Every Monday morning, or after heavy play days" />
             </>
           ) : null}
 
@@ -207,11 +252,23 @@ export default function EntryFormScreen() {
 
           {kind === 'record' ? (
             <>
-              <Field label="Record name *" value={record.title} onChangeText={(value) => setRecord((current) => ({ ...current, title: value }))} placeholder="Rabies vaccine" />
-              <Field label="Date given" value={record.dateGiven} onChangeText={(value) => setRecord((current) => ({ ...current, dateGiven: value }))} placeholder="2026-04-27" />
+              <Field label="Record name *" value={record.title} onChangeText={(value) => setRecord((current) => ({ ...current, title: value }))} placeholder="Insurance note" />
+              <Field label="Category" value={record.kind} onChangeText={(value) => setRecord((current) => ({ ...current, kind: value }))} placeholder="Insurance, Admin, Wellness" />
+              <Field label="Date" value={record.dateGiven} onChangeText={(value) => setRecord((current) => ({ ...current, dateGiven: value }))} placeholder="2026-04-27" />
               <Field label="Expiration date" value={record.expiresAt} onChangeText={(value) => setRecord((current) => ({ ...current, expiresAt: value }))} placeholder="2027-04-27" />
               <Field label="Vet or provider" value={record.provider} onChangeText={(value) => setRecord((current) => ({ ...current, provider: value }))} placeholder="Maple Grove Vet" />
-              <TextAreaField label="Notes" value={record.notes} onChangeText={(value) => setRecord((current) => ({ ...current, notes: value }))} placeholder="Lot number or certificate notes" />
+              <TextAreaField label="Notes" value={record.notes} onChangeText={(value) => setRecord((current) => ({ ...current, notes: value }))} placeholder="Important summary or reference numbers" />
+            </>
+          ) : null}
+
+          {kind === 'vaccine' ? (
+            <>
+              <Field label="Vaccine name *" value={vaccine.name} onChangeText={(value) => setVaccine((current) => ({ ...current, name: value }))} placeholder="Rabies vaccine" />
+              <Field label="Date given" value={vaccine.dateGiven} onChangeText={(value) => setVaccine((current) => ({ ...current, dateGiven: value }))} placeholder="2026-04-27" />
+              <Field label="Next due / expiration" value={vaccine.expiresAt} onChangeText={(value) => setVaccine((current) => ({ ...current, expiresAt: value }))} placeholder="2027-04-27" />
+              <Field label="Provider" value={vaccine.provider} onChangeText={(value) => setVaccine((current) => ({ ...current, provider: value }))} placeholder="Maple Grove Vet" />
+              <Field label="Lot number" value={vaccine.lotNumber} onChangeText={(value) => setVaccine((current) => ({ ...current, lotNumber: value }))} placeholder="RAB-2026-334A" />
+              <TextAreaField label="Notes" value={vaccine.notes} onChangeText={(value) => setVaccine((current) => ({ ...current, notes: value }))} placeholder="Reactions, paperwork, booster instructions" />
             </>
           ) : null}
 

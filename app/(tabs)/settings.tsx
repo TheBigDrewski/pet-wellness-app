@@ -6,7 +6,7 @@ import { Screen } from '../../src/components/Screen';
 import { SectionHeader } from '../../src/components/SectionHeader';
 import { usePetCare } from '../../src/storage/PetCareProvider';
 import { exportSnapshot, importSnapshotFile } from '../../src/utils/storageTransfer';
-import { palette } from '../../src/utils/theme';
+import { palette, spacing } from '../../src/utils/theme';
 
 export default function SettingsScreen() {
   const { snapshot, restoreDemoData, clearAllData, importData } = usePetCare();
@@ -26,22 +26,43 @@ export default function SettingsScreen() {
       if (!next) {
         return;
       }
+      const confirmed = await confirmReplace(
+        'Replace local data?',
+        'Importing a backup replaces the current pets, logs, reminders, and records on this device.'
+      );
+      if (!confirmed) {
+        return;
+      }
       await importData(next);
-      Alert.alert('Import complete', 'The local backup has been restored.');
+      Alert.alert('Import complete', 'The local backup has been validated and restored.');
     } catch (error) {
       Alert.alert('Import failed', error instanceof Error ? error.message : 'Unable to import that file.');
     }
   };
 
+  const handleRestoreDemo = async () => {
+    if (!(await confirmReplace('Reload demo data?', 'This will replace the current local data with sample demo content.'))) {
+      return;
+    }
+    await restoreDemoData();
+  };
+
+  const handleClear = async () => {
+    if (!(await confirmReplace('Clear all local data?', 'This permanently removes pets, logs, reminders, and records from this device.'))) {
+      return;
+    }
+    await clearAllData();
+  };
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={styles.content}>
-        <SectionHeader title="Data" subtitle="Manage local-only backups and demo content" />
+        <SectionHeader title="Data" subtitle="Backups, imports, demo data, and reset controls" />
         <Card style={styles.card}>
           <Text style={styles.title}>Backup and restore</Text>
           <Text style={styles.body}>
-            Export all pets, logs, reminders, and records as JSON. Import the same JSON later on web or
-            in Expo Go.
+            Export all pets, logs, reminders, medication history, vaccines, and records as JSON. Imports are
+            validated before replacing local data.
           </Text>
           <View style={styles.actions}>
             <Button label="Export JSON" onPress={handleExport} />
@@ -50,21 +71,21 @@ export default function SettingsScreen() {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.title}>Demo data</Text>
+          <Text style={styles.title}>Demo and reset</Text>
           <Text style={styles.body}>
-            Load realistic sample pets and logs for testing or reset the app back to a fresh state.
+            Reload sample pets and events for testing, or clear the app back to an empty local state.
           </Text>
           <View style={styles.actions}>
-            <Button label="Reload demo data" variant="secondary" onPress={restoreDemoData} />
-            <Button label="Clear all data" variant="danger" onPress={clearAllData} />
+            <Button label="Reload demo data" variant="secondary" onPress={handleRestoreDemo} />
+            <Button label="Clear all data" variant="danger" onPress={handleClear} />
           </View>
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.title}>About this MVP</Text>
+          <Text style={styles.title}>Local-first notes</Text>
           <Text style={styles.body}>
-            Local-first storage only. No authentication, cloud sync, push notifications, or file uploads in
-            phase 1.
+            Pet profile photos use local URIs. Imported backups restore the URI values, but the underlying image
+            files may not exist on a different device or browser.
           </Text>
         </Card>
       </ScrollView>
@@ -72,13 +93,26 @@ export default function SettingsScreen() {
   );
 }
 
+async function confirmReplace(title: string, message: string) {
+  if (Platform.OS === 'web') {
+    return window.confirm(`${title}\n\n${message}`);
+  }
+
+  return new Promise<boolean>((resolve) => {
+    Alert.alert(title, message, [
+      { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+      { text: 'Continue', style: 'destructive', onPress: () => resolve(true) },
+    ]);
+  });
+}
+
 const styles = StyleSheet.create({
   content: {
-    gap: 16,
+    gap: spacing.md,
     paddingBottom: 24,
   },
   card: {
-    gap: 12,
+    gap: spacing.sm,
   },
   title: {
     color: palette.ink,
@@ -93,6 +127,6 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: spacing.sm,
   },
 });

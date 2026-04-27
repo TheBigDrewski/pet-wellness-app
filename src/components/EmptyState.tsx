@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from './Button';
 import { Card } from './Card';
-import { palette } from '../utils/theme';
+import { palette, spacing } from '../utils/theme';
 
 type EmptyStateProps = {
   title: string;
@@ -29,7 +29,7 @@ export function EmptyState({ title, description, ctaLabel, href }: EmptyStatePro
 const styles = StyleSheet.create({
   card: {
     alignItems: 'flex-start',
-    gap: 10,
+    gap: spacing.sm,
   },
   title: {
     color: palette.ink,

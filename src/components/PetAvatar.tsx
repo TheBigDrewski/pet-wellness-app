@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { palette } from '../utils/theme';
 
@@ -6,6 +6,7 @@ type PetAvatarProps = {
   name: string;
   species: string;
   size?: number;
+  photoUri?: string;
 };
 
 const speciesGlyph: Record<string, string> = {
@@ -16,11 +17,15 @@ const speciesGlyph: Record<string, string> = {
   reptile: '🦎',
 };
 
-export function PetAvatar({ name, species, size = 52 }: PetAvatarProps) {
+export function PetAvatar({ name, species, size = 52, photoUri }: PetAvatarProps) {
   const emoji = speciesGlyph[species.toLowerCase()] ?? '🐾';
   return (
     <View style={[styles.container, { height: size, width: size, borderRadius: size / 2 }]}>
-      <Text style={[styles.emoji, { fontSize: size / 2.2 }]}>{emoji}</Text>
+      {photoUri ? (
+        <Image source={{ uri: photoUri }} style={{ height: size, width: size }} resizeMode="cover" />
+      ) : (
+        <Text style={[styles.emoji, { fontSize: size / 2.2 }]}>{emoji}</Text>
+      )}
       <Text style={styles.initial}>{name.slice(0, 1).toUpperCase()}</Text>
     </View>
   );

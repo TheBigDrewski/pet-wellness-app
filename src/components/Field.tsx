@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
-import { palette } from '../utils/theme';
+import { palette, radii } from '../utils/theme';
 
 type FieldProps = TextInputProps & {
   label: string;
@@ -45,9 +45,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    backgroundColor: '#fffaf5',
-    borderColor: '#ddcbbd',
-    borderRadius: 16,
+    backgroundColor: palette.surface,
+    borderColor: palette.line,
+    borderRadius: radii.md,
     borderWidth: 1,
     color: palette.ink,
     fontSize: 14,

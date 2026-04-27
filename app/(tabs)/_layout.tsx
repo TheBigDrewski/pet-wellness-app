@@ -35,7 +35,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Dashboard', headerTitle: 'Pet Care Tracker' }} />
       <Tabs.Screen name="pets" options={{ title: 'Pets' }} />
       <Tabs.Screen name="logs" options={{ title: 'Logs' }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Calendar' }} />
+      <Tabs.Screen name="calendar" options={{ title: 'Upcoming', headerTitle: 'Upcoming Care' }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );

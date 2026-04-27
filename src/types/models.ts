@@ -11,13 +11,20 @@ export type Pet = {
   vetName: string;
   vetPhone: string;
   vetClinic: string;
+  preferredVetClinic: string;
   photoUri: string;
+  allergies: string;
+  knownConditions: string;
+  currentFood: string;
+  insuranceProvider: string;
+  insurancePolicyNumber: string;
+  emergencyContact: string;
   notes: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export type PetInput = Omit<Pet, 'id' | 'photoUri' | 'createdAt' | 'updatedAt'>;
+export type PetInput = Omit<Pet, 'id' | 'createdAt' | 'updatedAt'>;
 
 export type HealthLog = {
   id: string;
@@ -52,25 +59,41 @@ export type FeedingLog = {
 
 export type FeedingLogInput = Omit<FeedingLog, 'id' | 'petId'>;
 
+export type MedicationScheduleType = 'onceDaily' | 'twiceDaily' | 'everyXHours' | 'weekly' | 'custom';
+export type MedicationDoseStatus = 'given' | 'skipped';
+
 export type Medication = {
   id: string;
   petId: string;
   name: string;
   dosage: string;
-  frequencyHours: number;
-  startDate: string;
-  endDate: string;
-  notes: string;
-  lastGivenAt: string;
+  scheduleType: MedicationScheduleType;
+  intervalHours: number;
+  startAt: string;
+  endAt: string;
+  instructions: string;
+  customScheduleNotes: string;
   createdAt: string;
 };
 
 export type MedicationInput = {
   name: string;
   dosage: string;
-  frequencyHours: string;
-  startDate: string;
-  endDate: string;
+  scheduleType: MedicationScheduleType;
+  intervalHours: string;
+  startAt: string;
+  endAt: string;
+  instructions: string;
+  customScheduleNotes: string;
+};
+
+export type MedicationDose = {
+  id: string;
+  medicationId: string;
+  petId: string;
+  scheduledFor: string;
+  status: MedicationDoseStatus;
+  actedAt: string;
   notes: string;
 };
 
@@ -82,10 +105,11 @@ export type Appointment = {
   scheduledAt: string;
   location: string;
   notes: string;
+  completedAt: string;
   createdAt: string;
 };
 
-export type AppointmentInput = Omit<Appointment, 'id' | 'petId' | 'createdAt'>;
+export type AppointmentInput = Omit<Appointment, 'id' | 'petId' | 'completedAt' | 'createdAt'>;
 
 export type WeightLog = {
   id: string;
@@ -107,6 +131,7 @@ export type RecordItem = {
   id: string;
   petId: string;
   title: string;
+  kind: string;
   dateGiven: string;
   expiresAt: string;
   provider: string;
@@ -115,34 +140,67 @@ export type RecordItem = {
 
 export type RecordInput = Omit<RecordItem, 'id' | 'petId'>;
 
+export type VaccineRecord = {
+  id: string;
+  petId: string;
+  name: string;
+  dateGiven: string;
+  expiresAt: string;
+  provider: string;
+  lotNumber: string;
+  notes: string;
+};
+
+export type VaccineInput = Omit<VaccineRecord, 'id' | 'petId'>;
+
 export type AppSnapshot = {
+  schemaVersion: number;
   pets: Pet[];
   healthLogs: HealthLog[];
   feedingLogs: FeedingLog[];
   medications: Medication[];
+  medicationDoses: MedicationDose[];
   appointments: Appointment[];
   weightLogs: WeightLog[];
   recordItems: RecordItem[];
+  vaccineRecords: VaccineRecord[];
+};
+
+export type TimelineEventType = 'health' | 'feeding' | 'dose' | 'appointment' | 'weight' | 'record' | 'vaccine';
+export type DueStatus = 'overdue' | 'dueToday' | 'upcoming' | 'completed' | 'current' | 'expiringSoon' | 'expired';
+
+export type TimelineEvent = {
+  id: string;
+  petId: string;
+  petName: string;
+  date: string;
+  type: TimelineEventType;
+  title: string;
+  subtitle: string;
+  notes: string;
+  status?: DueStatus;
+};
+
+export type UpcomingItem = TimelineEvent & {
+  group: 'Today' | 'This week' | 'Later' | 'Past';
 };
 
 export type DashboardPet = Pet & {
   latestWeightLabel: string;
+  careScore: number;
+  statusSummary: string;
+  overdueCount: number;
+  activeMedicationCount: number;
+  recentConcern: string;
+  nextDueLabel: string;
+  vaccineStatus: string;
 };
 
-export type DashboardTimelineItem = {
+export type DashboardAlert = {
   id: string;
+  petId: string;
   petName: string;
   title: string;
-  description: string;
-  when: string;
-  kind: 'appointment' | 'medication';
-};
-
-export type DashboardActivity = {
-  id: string;
-  petName: string;
-  title: string;
-  description: string;
-  when: string;
-  kind: 'health' | 'diet' | 'weight' | 'record';
+  detail: string;
+  status: 'warning' | 'info';
 };
